@@ -68,7 +68,7 @@ impl Drop for TmpFilesystem {
         assert!(self.path.exists());
         assert!(self.path.is_dir());
 
-        std::fs::remove_dir_all(&self.path).expect(&format!("TmpFilesystem mount directory deletion failed, path: {}", self.path.display()));
+        std::fs::remove_dir_all(&self.path).unwrap_or_else(|_| panic!("TmpFilesystem mount directory deletion failed, path: {}", self.path.display()));
     }
 }
 
@@ -108,10 +108,10 @@ impl DirBuilder {
         std::fs::create_dir(&path)?;
 
         // build files
-        self.child_files.into_iter().map(|file| file.build(&path)).collect::<anyhow::Result<()>>()?;
+        self.child_files.into_iter().try_for_each(|file| file.build(&path))?;
 
         // build directories
-        self.child_dirs.into_iter().map(|dir| dir.build(&path)).collect::<anyhow::Result<()>>()?;
+        self.child_dirs.into_iter().try_for_each(|dir| dir.build(&path))?;
 
         return anyhow::Result::Ok(());
     }
@@ -141,7 +141,7 @@ impl FileBuilder {
     pub fn new_gitignore(content: &[&str]) -> Self {
 
         let content_line_list = content.iter().map(|line| String::from(*line));
-        let content_string = content_line_list.reduce(|l1, l2| format!("{}\n{}", l1, l2)).unwrap_or(String::new());
+        let content_string = content_line_list.reduce(|l1, l2| format!("{}\n{}", l1, l2)).unwrap_or_else(|| String::from(""));
         let content_bytes = content_string.into_bytes();
 
         return Self::new(".gitignore", content_bytes);
@@ -156,7 +156,7 @@ impl FileBuilder {
         // write content if needed
         if let Some(content) = self.content {
 
-            file.write(&content)?;
+            file.write_all(&content)?;
         }
 
         return anyhow::Result::Ok(());
