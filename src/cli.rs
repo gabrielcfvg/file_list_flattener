@@ -3,12 +3,13 @@
 
 fn build_cli_parser() -> clap::Command<'static> {
 
+    // extern
     use clap::{Command, Arg};
 
     // program info
     let command = Command::new("file list flattener")
         .version("0.1.0")
-        .about("flatten file lists")
+        .about("flatten file lists with gitignore syntax")
         .author("gabrielcfvg <gabrielcfvg@gmail.com>");
 
     // file list name matcher
@@ -43,6 +44,9 @@ fn build_cli_parser() -> clap::Command<'static> {
 #[cfg(test)]
 mod cli_parser_tests {
 
+    use super::*;
+
+
     pub fn expect_parsing_error<'a>(parser: clap::Command<'static>, arg_list: impl std::iter::IntoIterator<Item=&'a str>) {
     
         assert!(matches!(parser.try_get_matches_from(arg_list), Err(_)));
@@ -66,7 +70,7 @@ mod cli_parser_tests {
     #[test]
     fn test_invalid_arg_list() {
     
-        let parser = super::build_cli_parser();
+        let parser = build_cli_parser();
     
         expect_parsing_error(parser.clone(), ["flf"]);
         expect_parsing_error(parser.clone(), ["flf", "."]);
@@ -80,17 +84,17 @@ mod cli_parser_tests {
     #[test]
     fn test_matcher_selection() {
 
-        let parser = super::build_cli_parser();
+        let parser = build_cli_parser();
 
         // regex
-        let matches = expect_parsing_success(parser.clone(), ["flf", "-r", "foo", "."]);
-        expect_arg(&matches, "regex_matcher", "foo");
+        let matches = expect_parsing_success(parser.clone(), ["flf", "-r", "regex_pattern", "."]);
+        expect_arg(&matches, "regex_matcher", "regex_pattern");
         expect_arg_err(&matches, "glob_matcher");
         expect_arg(&matches, "path", ".");
         
         // glob
-        let matches = expect_parsing_success(parser.clone(), ["flf", "-g", "foo", "."]);
-        expect_arg(&matches, "glob_matcher", "foo");
+        let matches = expect_parsing_success(parser.clone(), ["flf", "-g", "glob_pattern", "."]);
+        expect_arg(&matches, "glob_matcher", "glob_pattern");
         expect_arg_err(&matches, "regex_matcher");
         expect_arg(&matches, "path", ".");
     }
@@ -139,6 +143,7 @@ fn parse_cli_matches(matches: clap::ArgMatches) -> Arguments {
 #[test]
 fn test_cli_matches_parser() {
 
+    // extern
     use cli_parser_tests::*;
 
     let parser = build_cli_parser();
