@@ -60,19 +60,20 @@ impl IgnoreNode {
 fn test_ignore_node() {
 
     use std::path::Path;
-    use crate::filesystem_builder::{DirBuilder, FileBuilder, TmpFilesystem};
+    use crate::filesystem::tmp_filesystem::TmpFilesystem;
+    use crate::filesystem::template::{File, Dir};
     
-    let dir_builder = DirBuilder::new("dir")
-        .add_file(FileBuilder::new_gitignore(&["/ignore_dir*", "!/ignore_dir_white", "foo*", "bar*"]))
-        .add_dir(DirBuilder::new("ignore_dir1"))
-        .add_dir(DirBuilder::new("ignore_dir2"))
-        .add_dir(DirBuilder::new("ignore_dir_white"))
-        .add_dir(DirBuilder::new("sub_dir")
-            .add_file(FileBuilder::new_gitignore(&["!bar*"]))
-            .add_dir(DirBuilder::new("foo_dir"))
-            .add_dir(DirBuilder::new("bar_dir")));
+    let dir_template = Dir::new("dir")
+        .add_file(File::new_gitignore(&["/ignore_dir*", "!/ignore_dir_white", "foo*", "bar*"]))
+        .add_dir(Dir::new("ignore_dir1"))
+        .add_dir(Dir::new("ignore_dir2"))
+        .add_dir(Dir::new("ignore_dir_white"))
+        .add_dir(Dir::new("sub_dir")
+            .add_file(File::new_gitignore(&["!bar*"]))
+            .add_dir(Dir::new("foo_dir"))
+            .add_dir(Dir::new("bar_dir")));
 
-    let filesystem = TmpFilesystem::new(dir_builder.clone());
+    let filesystem = TmpFilesystem::new(&dir_template);
 
     let matcher_dir = IgnoreNode::new(&filesystem.path().join("dir/.gitignore"), None);
     let matcher_sub_dir = IgnoreNode::new(&filesystem.path().join("dir/sub_dir/.gitignore"), Some(matcher_dir.clone()));
