@@ -5,7 +5,7 @@ mod cli;
 mod matcher;
 mod filesystem;
 mod ignore_node;
-mod job;
+mod batch;
 
 
 
