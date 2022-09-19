@@ -40,6 +40,7 @@ impl template::Visitor for Checker {
             }
             else { // symlink
 
+                assert!(file_type.is_symlink());
                 found = false;
             }
 
@@ -139,3 +140,5 @@ fn test_check_template_structure() {
     std::fs::File::create(filesystem.path().join("dir/unwanted_file")).unwrap();
     assert_eq!(Checker::check_dir(filesystem.path(), &dir_template), false)
 }
+
+// TODO: test file content

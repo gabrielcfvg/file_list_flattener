@@ -17,7 +17,7 @@ impl IgnoreNode {
 
     pub fn new(path: &std::path::Path, parent: Option<Arc<IgnoreNode>>) -> Arc<Self> {
 
-        debug_assert!(path.is_file());
+        assert!(path.is_file());
 
         let mut builder = GitignoreBuilder::new(path.parent().expect("invalid path"));
         
@@ -34,7 +34,7 @@ impl IgnoreNode {
 
     pub fn matches(self: &Arc<Self>, path: &std::path::Path) -> bool {
 
-        debug_assert!(self.matcher.path().join(path).is_dir());
+        assert!(self.matcher.path().join(path).is_dir());
 
         let mut node = self;
 
