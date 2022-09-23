@@ -1,7 +1,7 @@
 
 
 
-fn build_cli_parser() -> clap::Command<'static> {
+pub fn build_cli_parser() -> clap::Command<'static> {
 
     // extern
     use clap::{Command, Arg};
@@ -47,6 +47,7 @@ mod cli_parser_tests {
     use super::*;
 
 
+    #[track_caller]
     pub fn expect_parsing_error<'a>(parser: clap::Command<'static>, arg_list: impl std::iter::IntoIterator<Item=&'a str>) {
     
         assert!(matches!(parser.try_get_matches_from(arg_list), Err(_)));
@@ -57,11 +58,13 @@ mod cli_parser_tests {
         return parser.try_get_matches_from(arg_list).expect("invalid argument list");
     }
 
+    #[track_caller]
     pub fn expect_arg(matches: &clap::ArgMatches, arg_id: &str, arg_value: &str) {
 
         assert_eq!(matches.get_one::<String>(arg_id), Some(&arg_value.to_owned()));
     }
 
+    #[track_caller]
     pub fn expect_arg_err(matches: &clap::ArgMatches, arg_id: &str) {
 
         assert_eq!(matches.get_one::<String>(arg_id), None);
@@ -102,19 +105,19 @@ mod cli_parser_tests {
 
 
 #[derive(PartialEq, Eq, Debug)]
-enum MatcherOption {
+pub enum MatcherOption {
 
     Regex(String),
     Glob(String)
 }
 
-struct Arguments {
+pub struct Arguments {
 
     matcher: MatcherOption,
     path: String
 }
 
-fn parse_cli_matches(matches: clap::ArgMatches) -> Arguments {
+pub fn parse_cli_matches(matches: clap::ArgMatches) -> Arguments {
 
     let get_value = |id: &str| matches.get_one::<String>(id).expect("invalid matches").to_owned();
 

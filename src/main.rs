@@ -6,6 +6,7 @@ mod matcher;
 mod filesystem;
 mod ignore_node;
 mod batch;
+mod absolute_ignore;
 
 
 

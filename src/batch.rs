@@ -88,6 +88,7 @@ mod test_batch_builder {
     #[test]
     fn test_batch_builder_output_size() {
 
+        #[track_caller]
         fn test_with_item_count(item_count: usize) {
 
             assert_eq!(build_accumulator_with_size(item_count).get().len(), upper_rounded_division(item_count, BATCH_SIZE));
