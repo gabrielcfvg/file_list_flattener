@@ -3,163 +3,85 @@
 
 pub fn build_cli_parser() -> clap::Command<'static> {
 
-    // extern
     use clap::{Command, Arg};
-
+    
     // program info
     let command = Command::new("file list flattener")
         .version("0.1.0")
         .about("flatten file lists with gitignore syntax")
         .author("gabrielcfvg <gabrielcfvg@gmail.com>");
-
-    // file list name matcher
+    
+    // file list name selector
     let command = command
-        .arg(Arg::new("glob matcher")
-            .short('g')
-            .long("glob")
+        .arg(Arg::new("file list name")
+            .short('n')
             .takes_value(true)
-            .id("glob_matcher")
-            .conflicts_with("regex_matcher")
-            .required_unless_present("regex_matcher")
-            .help("match file lists with Unix glob patterns"))
-        .arg(Arg::new("regex matcher")
-            .short('r')
-            .long("regex")
-            .takes_value(true)
-            .id("regex_matcher")
-            .conflicts_with("glob_matcher")
-            .required_unless_present("glob_matcher")
-            .help("match file lists with rust regex crate <crates.io/crates/regex>"));
+            .default_value(".gitignore")
+            .id("file_list_name"));
 
     // search path
     let command = command
         .arg(Arg::new("path")
             .takes_value(true)
-            .required(true)
+            .default_value(".")
             .id("path"));
-
+        
     return command;
 }
 
-#[cfg(test)]
-mod cli_parser_tests {
-
-    use super::*;
-
-
-    #[track_caller]
-    pub fn expect_parsing_error<'a>(parser: clap::Command<'static>, arg_list: impl std::iter::IntoIterator<Item=&'a str>) {
+#[test]
+fn test_cli_parser() {
     
-        assert!(matches!(parser.try_get_matches_from(arg_list), Err(_)));
-    }
+    let parser = build_cli_parser();
 
-    pub fn expect_parsing_success<'a>(parser: clap::Command<'static>, arg_list: impl std::iter::IntoIterator<Item=&'a str>) -> clap::ArgMatches {
+    let expect_parsing_success = |arg_list: &str| assert!(matches!(parser.clone().try_get_matches_from(arg_list.split_ascii_whitespace()), Ok(_)));
+    let expect_parsing_error = |arg_list: &str| assert!(matches!(parser.clone().try_get_matches_from(arg_list.split_ascii_whitespace()), Err(_)));
 
-        return parser.try_get_matches_from(arg_list).expect("invalid argument list");
-    }
+    expect_parsing_success("flf");
+    expect_parsing_success("flf .");
+    expect_parsing_success("flf -n foo");
+    expect_parsing_success("flf -n foo .");
+    expect_parsing_success("flf . -n foo");
 
-    #[track_caller]
-    pub fn expect_arg(matches: &clap::ArgMatches, arg_id: &str, arg_value: &str) {
-
-        assert_eq!(matches.get_one::<String>(arg_id), Some(&arg_value.to_owned()));
-    }
-
-    #[track_caller]
-    pub fn expect_arg_err(matches: &clap::ArgMatches, arg_id: &str) {
-
-        assert_eq!(matches.get_one::<String>(arg_id), None);
-    }
-
-    #[test]
-    fn test_invalid_arg_list() {
-    
-        let parser = build_cli_parser();
-    
-        expect_parsing_error(parser.clone(), ["flf"]);
-        expect_parsing_error(parser.clone(), ["flf", "."]);
-        expect_parsing_error(parser.clone(), ["flf", "-r", "foo"]);
-        expect_parsing_error(parser.clone(), ["flf", "-g", "foo"]);
-        expect_parsing_error(parser.clone(), ["flf", ".", "-r"]);
-        expect_parsing_error(parser.clone(), ["flf", ".", "-g"]);
-        expect_parsing_error(parser.clone(), ["flf", "-r", "foo", "-g", "foo", "."]);
-    }
-
-    #[test]
-    fn test_matcher_selection() {
-
-        let parser = build_cli_parser();
-
-        // regex
-        let matches = expect_parsing_success(parser.clone(), ["flf", "-r", "regex_pattern", "."]);
-        expect_arg(&matches, "regex_matcher", "regex_pattern");
-        expect_arg_err(&matches, "glob_matcher");
-        expect_arg(&matches, "path", ".");
-        
-        // glob
-        let matches = expect_parsing_success(parser.clone(), ["flf", "-g", "glob_pattern", "."]);
-        expect_arg(&matches, "glob_matcher", "glob_pattern");
-        expect_arg_err(&matches, "regex_matcher");
-        expect_arg(&matches, "path", ".");
-    }
+    expect_parsing_error("flf -n");
+    expect_parsing_error("flf . -n");
 }
 
 
-#[derive(PartialEq, Eq, Debug)]
-pub enum MatcherOption {
-
-    Regex(String),
-    Glob(String)
-}
-
+#[derive(Debug, PartialEq, Eq)]
 pub struct Arguments {
 
-    matcher: MatcherOption,
-    path: String
+    path: std::path::PathBuf,
+    pattern_list_name: String
 }
 
-pub fn parse_cli_matches(matches: clap::ArgMatches) -> Arguments {
+pub fn parse_cli_matches(matches: &clap::ArgMatches) -> Arguments {
 
     let get_value = |id: &str| matches.get_one::<String>(id).expect("invalid matches").to_owned();
 
+    let path = std::path::PathBuf::from(get_value("path"));
+    let pattern_list_name = get_value("file_list_name");
 
-    let path = get_value("path");
-
-
-    let matcher: MatcherOption;
-
-    if matches.contains_id("regex_matcher") {
-
-        matcher = MatcherOption::Regex(get_value("regex_matcher"));
-    }
-    else if matches.contains_id("glob_matcher") {
-        
-        matcher = MatcherOption::Glob(get_value("glob_matcher"));
-    }
-    else {
-
-        panic!("invalid matches");
-    }
-
-    return Arguments{matcher, path};
+    return Arguments{path, pattern_list_name};
 }
 
 #[test]
 fn test_cli_matches_parser() {
 
-    // extern
-    use cli_parser_tests::*;
-
     let parser = build_cli_parser();
-    
-    // regex
-    let matches = expect_parsing_success(parser.clone(), ["flf", "-r", "regex_pattern", "."]);
-    let arguments = parse_cli_matches(matches);
-    assert_eq!(arguments.path, ".");
-    assert_eq!(arguments.matcher, MatcherOption::Regex("regex_pattern".to_owned()));
-    
-    // glob
-    let matches = expect_parsing_success(parser.clone(), ["flf", "-g", "glob_pattern", "."]);
-    let arguments = parse_cli_matches(matches);
-    assert_eq!(arguments.path, ".");
-    assert_eq!(arguments.matcher, MatcherOption::Glob("glob_pattern".to_owned()));
+
+    let expect_result = |args: &str, path: &str, pattern_list_name: &str| {
+        
+        let expected_arguments = Arguments{path: std::path::PathBuf::from(path), pattern_list_name: pattern_list_name.to_owned()};
+        let matches = parser.clone().try_get_matches_from(args.split_ascii_whitespace()).expect("invalid arguments");
+
+        assert_eq!(parse_cli_matches(&matches), expected_arguments)
+    };
+
+    expect_result("flf", ".", ".gitignore");
+    expect_result("flf .", ".", ".gitignore");
+    expect_result("flf foo", "foo", ".gitignore");
+    expect_result("flf -n bar", ".", "bar");
+    expect_result("flf -n bar foo", "foo", "bar");
+    expect_result("flf foo -n bar", "foo", "bar");
 }
