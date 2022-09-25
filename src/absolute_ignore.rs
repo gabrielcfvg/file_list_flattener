@@ -1,7 +1,46 @@
 
 
 
-fn add_parent_to_ignore_pattern(path: &str, pattern: IgnorePattern) -> String {
+pub fn read_patterns_from_file(path: &std::path::Path, pattern_parent_path: &std::path::Path) -> Vec<String> {
+
+    assert!(path.is_file());
+
+    let mut patterns = Vec::new();
+    
+    for line in std::fs::read_to_string(path).expect("ignore file reading error").lines() {
+    
+        if filter_ignore_line(line) == false {
+    
+            continue;
+        }
+    
+        let pattern = add_parent_to_ignore_pattern(pattern_parent_path, parse_ignore_pattern(strip_trailing_whitespaces(line)));
+        patterns.push(pattern);
+    }
+    
+    return patterns;
+}
+
+#[test]
+fn test_read_patterns_from_file() {
+
+    use crate::filesystem::tmp_filesystem::TmpFilesystem;
+    use crate::filesystem::template::{Dir, File};
+
+
+    let fs_template = Dir::new("dir")
+        .add_file(File::new_gitignore(&["foo", "/foo", "foo/"]));
+
+    let fs = TmpFilesystem::new(&fs_template);
+    
+    let ignore_file_path = fs.path().join("dir/.gitignore");
+    let dir_path = std::path::Path::new("dir");
+
+    assert_eq!(read_patterns_from_file(&ignore_file_path, dir_path), ["dir/**/foo", "dir/foo", "dir/**/foo/"]);
+}
+
+
+pub fn add_parent_to_ignore_pattern(path: &std::path::Path, pattern: IgnorePattern) -> String {
 
     assert!(pattern.pattern_body.is_empty() == false);
     assert!(pattern.pattern_body.starts_with('/') == false);
@@ -15,7 +54,7 @@ fn add_parent_to_ignore_pattern(path: &str, pattern: IgnorePattern) -> String {
     }
 
     // add parent path
-    result = format!("{}/{}", path, result);
+    result = format!("{}/{}", path.to_str().expect("non-UTF-8 path"), result);
 
     if pattern.negated == true {
 
@@ -31,7 +70,7 @@ fn test_add_parent_to_ignore_pattern() {
     #[track_caller]
     fn assert_pattern(base_path: &str, input: &str, expected_output: &str) {
 
-        assert_eq!(&add_parent_to_ignore_pattern(base_path, parse_ignore_pattern(input)), expected_output);
+        assert_eq!(&add_parent_to_ignore_pattern(std::path::Path::new(base_path), parse_ignore_pattern(input)), expected_output);
     }
 
     let path = "foo/bar";
@@ -48,15 +87,15 @@ fn test_add_parent_to_ignore_pattern() {
 }
 
 
-#[derive(PartialEq, Debug)]
-struct IgnorePattern<'a> {
+#[derive(PartialEq, Eq, Debug)]
+pub struct IgnorePattern<'a> {
 
     negated: bool,
     absolute: bool,
     pattern_body: &'a str
 }
 
-fn parse_ignore_pattern(mut pattern: &str) -> IgnorePattern {
+pub fn parse_ignore_pattern(mut pattern: &str) -> IgnorePattern {
 
     assert!(pattern.is_empty() == false);
     assert!(pattern.starts_with('#') == false);
@@ -103,7 +142,7 @@ fn test_parse_ignore_pattern() {
 }
 
 
-fn filter_ignore_line(line: &str) -> bool {
+pub fn filter_ignore_line(line: &str) -> bool {
 
     if line.is_empty() {
 
@@ -144,7 +183,7 @@ fn test_filter_ignore_line() {
 
 
 // reference: https://github.com/git/git/blob/4b79ee4b0cd1130ba8907029cdc5f6a1632aca26/dir.c#L936
-fn strip_trailing_whitespaces(line: &str) -> &str {
+pub fn strip_trailing_whitespaces(line: &str) -> &str {
     
     let stripped = line.trim_end_matches(' ');
 
