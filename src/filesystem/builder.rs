@@ -83,7 +83,7 @@ fn test_empty_dir_builder() {
     assert!(dir_path.is_dir());
 
     // asserts that the directory is empty
-    assert!(walkdir::WalkDir::new(dir_path).min_depth(1).into_iter().next().is_none());
+    assert!(std::fs::read_dir(dir_path).unwrap_or_else(|err| panic!("unexpected walk error, error: {}", err)).into_iter().next().is_none());
 }
 
 #[test]

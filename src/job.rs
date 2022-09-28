@@ -27,18 +27,18 @@ pub fn process_job(job: Job, push_job: &mut dyn FnMut(Job), ignore_file_name: &s
     }
 
     
-    let walk_io_error_handler = |err| {
+    fn walk_io_error_handler(err: impl std::error::Error) -> ! {
         
         eprintln!("filesystem traversal IO error, error: {:?}", err);
         std::process::exit(1);
-    };
+    }
 
-    let dir_walker = walkdir::WalkDir::new(path).min_depth(1).max_depth(1);
+    let dir_walker = std::fs::read_dir(path).unwrap_or_else(|err| walk_io_error_handler(err));
     
     dir_walker.into_iter()
-        .map(|entry| entry.unwrap_or_else(walk_io_error_handler))
-        .filter(|entry| entry.file_type().is_dir())
-        .filter(|dir| ignore_context.is_none() || ignore_context.is_some_and(|matcher| matcher.matches(dir.path()) == false))
+        .map(|entry| entry.unwrap_or_else(|err| walk_io_error_handler(err)))
+        .filter(|entry| entry.file_type().unwrap_or_else(|err| walk_io_error_handler(err)).is_dir())
+        .filter(|dir| ignore_context.is_none() || ignore_context.is_some_and(|matcher| matcher.matches(&dir.path()) == false))
         .for_each(|dir| push_job(Job{path: dir.path().to_owned(), ignore_context: ignore_context.clone()}));
 
     return local_patterns;

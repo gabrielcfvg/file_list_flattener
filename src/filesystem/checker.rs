@@ -22,10 +22,10 @@ impl template::Visitor for Checker {
         }
 
         // checks for unwanted entries
-        let walker = walkdir::WalkDir::new(&path).min_depth(1).max_depth(1);
+        let walker = std::fs::read_dir(&path).unwrap_or_else(|err| panic!("unexpected walk error, error: {}", err));
         for entry in walker.into_iter().map(|entry| entry.unwrap_or_else(|err| panic!("unexpected walk error, error: {}", err))) {
 
-            let file_type = entry.file_type();
+            let file_type = entry.file_type().unwrap_or_else(|err| panic!("unexpected walk error, error: {}", err));
             let entry_name = entry.file_name();
 
             let found;
