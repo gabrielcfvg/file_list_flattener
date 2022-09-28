@@ -74,7 +74,7 @@ impl template::Visitor for Checker {
         // check file content
         if let Some(ref content) = file.content {
             
-            let file_content = std::fs::read_to_string(&path).unwrap().into_bytes();
+            let file_content = std::fs::read_to_string(&path).unwrap_or_else(|err| panic!("inaccessible file content, error: {}", err)).into_bytes();
             
             if file_content != *content {
                 
@@ -83,7 +83,7 @@ impl template::Visitor for Checker {
         }
         else { // empty file
 
-            if std::fs::metadata(&path).expect("file metadata reading error").len() != 0 {
+            if std::fs::metadata(&path).unwrap_or_else(|err| panic!("inaccessible file metadata, error: {}", err)).len() != 0 {
 
                 return false;
             }

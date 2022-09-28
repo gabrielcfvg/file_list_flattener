@@ -51,8 +51,8 @@ fn test_cli_parser() {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Arguments {
 
-    path: std::path::PathBuf,
-    pattern_list_name: String
+    pub path: std::path::PathBuf,
+    pub ignore_file_name: String
 }
 
 pub fn parse_cli_matches(matches: &clap::ArgMatches) -> Arguments {
@@ -60,9 +60,9 @@ pub fn parse_cli_matches(matches: &clap::ArgMatches) -> Arguments {
     let get_value = |id: &str| matches.get_one::<String>(id).expect("invalid matches").to_owned();
 
     let path = std::path::PathBuf::from(get_value("path"));
-    let pattern_list_name = get_value("file_list_name");
+    let ignore_file_name = get_value("file_list_name");
 
-    return Arguments{path, pattern_list_name};
+    return Arguments{path, ignore_file_name};
 }
 
 #[test]
@@ -70,9 +70,9 @@ fn test_cli_matches_parser() {
 
     let parser = build_cli_parser();
 
-    let expect_result = |args: &str, path: &str, pattern_list_name: &str| {
+    let expect_result = |args: &str, path: &str, ignore_file_name: &str| {
         
-        let expected_arguments = Arguments{path: std::path::PathBuf::from(path), pattern_list_name: pattern_list_name.to_owned()};
+        let expected_arguments = Arguments{path: std::path::PathBuf::from(path), ignore_file_name: ignore_file_name.to_owned()};
         let matches = parser.clone().try_get_matches_from(args.split_ascii_whitespace()).expect("invalid arguments");
 
         assert_eq!(parse_cli_matches(&matches), expected_arguments)

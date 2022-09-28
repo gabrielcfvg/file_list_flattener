@@ -5,14 +5,15 @@ use crate::ignore_node::IgnoreNode;
 
 
 
-struct Job {
+#[derive(Debug)]
+pub struct Job {
 
-    path: std::path::PathBuf,
-    ignore_context: Option<Arc<IgnoreNode>>
+    pub path: std::path::PathBuf,
+    pub ignore_context: Option<Arc<IgnoreNode>>
 }
 
 
-fn process_job(job: Job, push_job: &mut dyn FnMut(Job), ignore_file_name: &str) -> Option<Vec<String>> {
+pub fn process_job(job: Job, push_job: &mut dyn FnMut(Job), ignore_file_name: &str) -> Option<Vec<String>> {
 
     let Job{ref path, mut ignore_context} = job;
 
@@ -25,19 +26,20 @@ fn process_job(job: Job, push_job: &mut dyn FnMut(Job), ignore_file_name: &str) 
         local_patterns = Some(absolute_ignore::read_patterns_from_file(&local_gitignore_path, path));
     }
 
+    
+    let walk_io_error_handler = |err| {
+        
+        eprintln!("filesystem traversal IO error, error: {:?}", err);
+        std::process::exit(1);
+    };
+
     let dir_walker = walkdir::WalkDir::new(path).min_depth(1).max_depth(1);
-    for dir in dir_walker.into_iter().map(|entry| entry.unwrap()).filter(|entry| entry.file_type().is_dir()) {
-
-        if let Some(ref ignore_matcher) = ignore_context {
-
-            if ignore_matcher.matches(dir.path()) == true {
-
-                continue;
-            }
-        }
-
-        push_job(Job{path: dir.path().to_owned(), ignore_context: ignore_context.clone()});
-    }
+    
+    dir_walker.into_iter()
+        .map(|entry| entry.unwrap_or_else(walk_io_error_handler))
+        .filter(|entry| entry.file_type().is_dir())
+        .filter(|dir| ignore_context.is_none() || ignore_context.is_some_and(|matcher| matcher.matches(dir.path()) == false))
+        .for_each(|dir| push_job(Job{path: dir.path().to_owned(), ignore_context: ignore_context.clone()}));
 
     return local_patterns;
 }

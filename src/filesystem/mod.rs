@@ -1,3 +1,4 @@
+#![cfg(test)]
 
 pub mod template;
 pub mod builder;

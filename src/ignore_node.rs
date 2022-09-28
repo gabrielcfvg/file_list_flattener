@@ -7,6 +7,7 @@ use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
 
 
+#[derive(Debug)]
 pub struct IgnoreNode {
 
     matcher: Gitignore,
@@ -33,8 +34,6 @@ impl IgnoreNode {
     }
 
     pub fn matches(self: &Arc<Self>, path: &std::path::Path) -> bool {
-
-        assert!(self.matcher.path().join(path).is_dir());
 
         let mut node = self;
 

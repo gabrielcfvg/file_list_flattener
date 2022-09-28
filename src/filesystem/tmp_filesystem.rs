@@ -15,11 +15,11 @@ impl<'a> TmpFilesystem {
         let name = Self::build_unique_name();
         let path = std::env::temp_dir().as_path().join(name);
 
-        std::fs::create_dir(&path).expect("TmpFilesystem creation failed");
+        std::fs::create_dir(&path).unwrap_or_else(|err| panic!("TmpFilesystem directory creation failed, error: {}", err));
     
         if let anyhow::Result::Err(err) = Builder::build_dir(&path, dir_template) {
 
-            panic!("DirBuilder building failed during TmpFilesystem creation, error: {}", err);
+            panic!("template building failed during TmpFilesystem creation, error: {}", err);
         }
 
         return Self{path};
@@ -54,7 +54,7 @@ impl<'a> TmpFilesystem {
     fn get_date() -> String {
 
         let now = std::time::SystemTime::now();
-        let since_unix_epoch = now.duration_since(std::time::SystemTime::UNIX_EPOCH).unwrap();
+        let since_unix_epoch = now.duration_since(std::time::SystemTime::UNIX_EPOCH).expect("invalid system date");
 
         return since_unix_epoch.as_nanos().to_string();
     }
