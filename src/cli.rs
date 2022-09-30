@@ -1,9 +1,9 @@
 
 
 
-pub fn build_cli_parser() -> clap::Command<'static> {
+pub fn build_cli_parser() -> clap::Command {
 
-    use clap::{Command, Arg};
+    use clap::{Command, Arg, ArgAction};
     
     // program info
     let command = Command::new("file list flattener")
@@ -15,14 +15,14 @@ pub fn build_cli_parser() -> clap::Command<'static> {
     let command = command
         .arg(Arg::new("file list name")
             .short('n')
-            .takes_value(true)
+            .action(ArgAction::Set)
             .default_value(".gitignore")
             .id("file_list_name"));
 
     // search path
     let command = command
         .arg(Arg::new("path")
-            .takes_value(true)
+            .action(ArgAction::Set)
             .default_value(".")
             .id("path"));
         
@@ -44,6 +44,7 @@ fn test_cli_parser() {
     expect_parsing_success("flf . -n foo");
 
     expect_parsing_error("flf -n");
+    expect_parsing_error("flf -n foo bar .");
     expect_parsing_error("flf . -n");
 }
 
