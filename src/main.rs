@@ -1,4 +1,4 @@
-#![feature(is_some_with)]
+#![feature(is_some_and)]
 
 #![allow(clippy::needless_return)]
 #![allow(clippy::bool_comparison)]

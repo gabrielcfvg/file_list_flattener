@@ -38,7 +38,7 @@ pub fn process_job(job: Job, push_job: &mut dyn FnMut(Job), ignore_file_name: &s
     dir_walker.into_iter()
         .map(|entry| entry.unwrap_or_else(|err| walk_io_error_handler(err)))
         .filter(|entry| entry.file_type().unwrap_or_else(|err| walk_io_error_handler(err)).is_dir())
-        .filter(|dir| ignore_context.is_none() || ignore_context.is_some_and(|matcher| matcher.matches(&dir.path()) == false))
+        .filter(|dir| ignore_context.is_none() || ignore_context.as_ref().is_some_and(|matcher| matcher.matches(&dir.path()) == false))
         .for_each(|dir| push_job(Job{path: dir.path().to_owned(), ignore_context: ignore_context.clone()}));
 
     return local_patterns;
