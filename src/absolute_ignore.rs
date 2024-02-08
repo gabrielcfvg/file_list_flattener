@@ -55,6 +55,7 @@ pub fn add_parent_to_ignore_pattern(path: &std::path::Path, pattern: IgnorePatte
 
     // add parent path
     result = format!("{}/{}", path.to_str().expect("non-UTF-8 path"), result);
+    result = result.replace("//", "/");
 
     if pattern.negated == true {
 
